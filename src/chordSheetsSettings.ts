@@ -1,8 +1,12 @@
-import {Instrument} from "./chordsUtils";
+import { Instrument } from "./chordsUtils";
 
 export type ShowAutoscrollButtonSetting = "never" | "chord-blocks" | "always";
 export type ShowChordOverviewSetting = "never" | "edit" | "preview" | "always";
-export type ShowChordDiagramsOnHoverSetting = "never" | "edit" | "preview" | "always";
+export type ShowChordDiagramsOnHoverSetting =
+	| "never"
+	| "edit"
+	| "preview"
+	| "always";
 
 export const DEFAULT_BLOCK_LANGUAGE_SPECIFIER = "chords";
 export const DEFAULT_CHORD_LINE_MARKER = "%c";
@@ -10,9 +14,9 @@ export const DEFAULT_TEXT_LINE_MARKER = "%t";
 
 export interface ChordSheetsSettings {
 	showChordOverview: ShowChordOverviewSetting;
-	showChordDiagramsOnHover: ShowChordDiagramsOnHoverSetting
+	showChordDiagramsOnHover: ShowChordDiagramsOnHoverSetting;
 	showTransposeControl: boolean;
-    showEnharmonicToggleControl: boolean;
+	showEnharmonicToggleControl: boolean;
 	showInstrumentControl: boolean;
 	debug: boolean;
 	defaultInstrument: Instrument;
@@ -27,13 +31,14 @@ export interface ChordSheetsSettings {
 	highlightSectionHeaders: boolean;
 	highlightRhythmMarkers: boolean;
 	displayInlineChordsOverLyrics: boolean;
+	displayOnlyChordChanges: boolean;
 }
 
 export const DEFAULT_SETTINGS: ChordSheetsSettings = {
 	showChordOverview: "always",
 	showChordDiagramsOnHover: "always",
 	showTransposeControl: true,
-    showEnharmonicToggleControl: false,
+	showEnharmonicToggleControl: false,
 	showInstrumentControl: true,
 	debug: false,
 	defaultInstrument: "guitar",
@@ -47,5 +52,6 @@ export const DEFAULT_SETTINGS: ChordSheetsSettings = {
 	highlightChords: true,
 	highlightSectionHeaders: true,
 	highlightRhythmMarkers: true,
-	displayInlineChordsOverLyrics: false
+	displayInlineChordsOverLyrics: false,
+	displayOnlyChordChanges: true,
 };

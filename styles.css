@@ -460,6 +460,10 @@ settings:
 	background-color: var(--chord-background-color, transparent);
 }
 
+.chord-sheet-chord-line .chord-sheet-chord.chord-sheet-chord-hidden-duplicate {
+    display: none;
+}
+
 .chord-sheet-chord-name {
 	text-align: center;
 	font-family: var(--font-monospace);

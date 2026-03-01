@@ -1,11 +1,17 @@
-import {MarkdownRenderChild} from "obsidian";
-import {Instrument, uniqueChordTokens} from "./chordsUtils";
+import { MarkdownRenderChild } from "obsidian";
+import { Instrument, uniqueChordTokens } from "./chordsUtils";
 import tippy from "tippy.js/headless";
-import {makeChordDiagram, makeChordOverview} from "./chordDiagrams";
-import {ChordSheetsSettings} from "./chordSheetsSettings";
+import { makeChordDiagram, makeChordOverview } from "./chordDiagrams";
+import { ChordSheetsSettings } from "./chordSheetsSettings";
 
-import {ChordToken, isChordToken, isHeaderToken, isMarkerToken, isRhythmToken} from "./sheet-parsing/tokens";
-import {tokenizeLine} from "./sheet-parsing/tokenizeLine";
+import {
+	ChordToken,
+	isChordToken,
+	isHeaderToken,
+	isMarkerToken,
+	isRhythmToken,
+} from "./sheet-parsing/tokens";
+import { tokenizeLine } from "./sheet-parsing/tokenizeLine";
 
 export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 	source: string;
@@ -13,13 +19,12 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 	constructor(
 		containerEl: HTMLElement,
 		private instrument: Instrument,
-		private settings: ChordSheetsSettings
+		private settings: ChordSheetsSettings,
 	) {
 		super(containerEl);
 	}
 
 	async onload() {
-
 		const codeEl = this.containerEl.getElementsByTagName("code").item(0);
 		if (codeEl) {
 			this.source = codeEl.innerText;
@@ -37,48 +42,66 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 			diagramWidth,
 			highlightChords,
 			highlightSectionHeaders,
-			highlightRhythmMarkers
+			highlightRhythmMarkers,
 		} = this.settings;
 
 		if (this.containerEl.children.length > 0) {
 			this.containerEl.empty();
 		}
 
-		const codeEl = this.containerEl.createEl("code", {cls: "chord-sheet-chord-block-preview"});
+		const codeEl = this.containerEl.createEl("code", {
+			cls: "chord-sheet-chord-block-preview",
+		});
 
 		const chordTokens: ChordToken[] = [];
 		const lines = this.source.split("\n");
 		let currentIndex = 0;
+		const { displayOnlyChordChanges } = this.settings;
+		let lastDisplayedChordSymbol: string | null = null;
 		for (const line of lines) {
-			const tokenizedLine = tokenizeLine(line, currentIndex, chordLineMarker, textLineMarker);
+			const tokenizedLine = tokenizeLine(
+				line,
+				currentIndex,
+				chordLineMarker,
+				textLineMarker,
+			);
 
 			const lineDiv = codeEl.createDiv({
-				cls: "chord-sheet-chord-line"
+				cls: "chord-sheet-chord-line",
 			});
 
 			for (let i = 0; i < tokenizedLine.tokens.length; i++) {
 				const token = tokenizedLine.tokens[i];
 
 				if (isChordToken(token)) {
+					if (
+						displayOnlyChordChanges &&
+						lastDisplayedChordSymbol === token.chordSymbol.value
+					) {
+						continue;
+					}
+
+					lastDisplayedChordSymbol = token.chordSymbol.value;
 					chordTokens.push(token);
 
 					let nextToken = tokenizedLine.tokens[i + 1];
 					const isTokenPair =
 						this.settings.displayInlineChordsOverLyrics &&
-						token.inlineChord && (
-							!nextToken || nextToken?.type === "word" || nextToken?.type === "whitespace" ||
-							isChordToken(nextToken)
-						);
+						token.inlineChord &&
+						(!nextToken ||
+							nextToken?.type === "word" ||
+							nextToken?.type === "whitespace" ||
+							isChordToken(nextToken));
 
-
-					const pairSpan = isTokenPair ? lineDiv.createSpan({
-						cls: "chord-sheet-chord-text-pair"
-					}) : null;
+					const pairSpan = isTokenPair
+						? lineDiv.createSpan({
+								cls: "chord-sheet-chord-text-pair",
+							})
+						: null;
 
 					const chordSpan = (pairSpan ?? lineDiv).createSpan({
 						cls: "chord-sheet-chord",
 					});
-
 
 					if (token.inlineChord) {
 						if (isTokenPair) {
@@ -86,55 +109,56 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 						}
 						chordSpan.createSpan({
 							cls: `chord-sheet-inline-chord-bracket`,
-							text: token.inlineChord.openingBracket.value
+							text: token.inlineChord.openingBracket.value,
 						});
 					}
 
 					chordSpan.createSpan({
 						cls: `chord-sheet-chord-name${highlightChords ? " chord-sheet-chord-highlight" : ""}`,
-						text: token.chordSymbol.value
+						text: token.chordSymbol.value,
 					});
 
 					if (token.userDefinedChord) {
 						const userDefinedChord = token.userDefinedChord;
 
 						chordSpan.createSpan({
-							cls: 'chord-sheet-user-defined-chord-bracket',
-							text: userDefinedChord.openingBracket.value
+							cls: "chord-sheet-user-defined-chord-bracket",
+							text: userDefinedChord.openingBracket.value,
 						});
-						userDefinedChord.position && chordSpan.createSpan({
-							cls: 'chord-sheet-user-defined-chord-position',
-							text: userDefinedChord.position.value
-						});
-						userDefinedChord.positionSeparator && chordSpan.createSpan({
-							cls: 'chord-sheet-user-defined-chord-position-separator',
-							text: userDefinedChord.positionSeparator.value
+						userDefinedChord.position &&
+							chordSpan.createSpan({
+								cls: "chord-sheet-user-defined-chord-position",
+								text: userDefinedChord.position.value,
+							});
+						userDefinedChord.positionSeparator &&
+							chordSpan.createSpan({
+								cls: "chord-sheet-user-defined-chord-position-separator",
+								text: userDefinedChord.positionSeparator.value,
+							});
+						chordSpan.createSpan({
+							cls: "chord-sheet-user-defined-chord-frets",
+							text: userDefinedChord.frets.value,
 						});
 						chordSpan.createSpan({
-							cls: 'chord-sheet-user-defined-chord-frets',
-							text: userDefinedChord.frets.value
+							cls: "chord-sheet-user-defined-chord-bracket",
+							text: userDefinedChord.closingBracket.value,
 						});
-						chordSpan.createSpan({
-							cls: 'chord-sheet-user-defined-chord-bracket',
-							text: userDefinedChord.closingBracket.value
-						});
-
 					}
 
 					if (token.inlineChord) {
 						if (token.inlineChord.auxText) {
 							chordSpan.createSpan({
 								cls: `chord-sheet-inline-chord-aux-text`,
-								text: token.inlineChord.auxText.value
+								text: token.inlineChord.auxText.value,
 							});
 						}
 						chordSpan.createSpan({
 							cls: `chord-sheet-inline-chord-bracket`,
-							text: token.inlineChord.closingBracket.value
+							text: token.inlineChord.closingBracket.value,
 						});
 
 						const trailingSpan = pairSpan?.createSpan({
-							cls: `chord-sheet-inline-chord-trailing-text`
+							cls: `chord-sheet-inline-chord-trailing-text`,
 						});
 
 						if (trailingSpan) {
@@ -142,7 +166,7 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 							while (nextToken && !isChordToken(nextToken)) {
 								trailingSpan.createSpan({
 									cls: `chord-sheet-${nextToken.type}`,
-									text: nextToken.value
+									text: nextToken.value,
 								});
 								i++;
 								nextToken = tokenizedLine.tokens[i + 1];
@@ -150,19 +174,21 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 						}
 					}
 
-
-					if (showChordDiagramsOnHover === "always" || showChordDiagramsOnHover === "preview") {
+					if (
+						showChordDiagramsOnHover === "always" ||
+						showChordDiagramsOnHover === "preview"
+					) {
 						this.attachChordDiagram(token, chordSpan);
 					}
 				} else if (highlightRhythmMarkers && isRhythmToken(token)) {
 					lineDiv.createSpan({
 						cls: `chord-sheet-rhythm-marker`,
-						text: token.value
+						text: token.value,
 					});
 				} else if (isMarkerToken(token)) {
 					lineDiv.createSpan({
 						cls: `chord-sheet-line-marker`,
-						text: token.value
+						text: token.value,
 					});
 				} else if (highlightSectionHeaders && isHeaderToken(token)) {
 					lineDiv.addClass("chord-sheet-section-header");
@@ -171,15 +197,15 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 					});
 					headerSpan.createSpan({
 						cls: `chord-sheet-section-header-bracket`,
-						text: token.openingBracket.value
+						text: token.openingBracket.value,
 					});
 					headerSpan.createSpan({
 						cls: `chord-sheet-section-header-name cm-strong`,
-                        text: token.headerName.value
+						text: token.headerName.value,
 					});
 					headerSpan.createSpan({
 						cls: `chord-sheet-section-header-bracket`,
-						text: token.closingBracket.value
+						text: token.closingBracket.value,
 					});
 				} else {
 					lineDiv.append(token.value);
@@ -191,9 +217,18 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 
 		if (showChordOverview === "always" || showChordOverview === "preview") {
 			const uniqueTokens = uniqueChordTokens(chordTokens);
-			const overviewContainerEl = createDiv({cls: "chord-sheet-chord-overview-container"});
-			const overviewEl = overviewContainerEl.createDiv({cls: "chord-sheet-chord-overview"});
-			makeChordOverview(this.instrument, overviewEl, uniqueTokens, diagramWidth);
+			const overviewContainerEl = createDiv({
+				cls: "chord-sheet-chord-overview-container",
+			});
+			const overviewEl = overviewContainerEl.createDiv({
+				cls: "chord-sheet-chord-overview",
+			});
+			makeChordOverview(
+				this.instrument,
+				overviewEl,
+				uniqueTokens,
+				diagramWidth,
+			);
 			this.containerEl.prepend(overviewContainerEl);
 		}
 	}
@@ -209,10 +244,14 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 		tippy(tokenEl, {
 			interactive: true,
 			render() {
-				return {popper};
+				return { popper };
 			},
 			onShow(instance) {
-				const chordBox = makeChordDiagram(instrument, token, diagramWidth);
+				const chordBox = makeChordDiagram(
+					instrument,
+					token,
+					diagramWidth,
+				);
 				if (chordBox) {
 					instance.popper.appendChild(chordBox);
 				} else {
@@ -221,9 +260,7 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 			},
 			onHidden(instance) {
 				instance.popper.empty();
-			}
+			},
 		});
-
 	}
-
 }
