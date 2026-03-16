@@ -67,7 +67,7 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 			);
 
 			const lineDiv = codeEl.createDiv({
-				cls: "chord-sheet-chord-line",
+				cls: `chord-sheet-chord-line${tokenizedLine.isChordLine ? " chord-sheet-line-is-chord" : ""}`,
 			});
 
 			for (let i = 0; i < tokenizedLine.tokens.length; i++) {
@@ -95,8 +95,8 @@ export class ChordBlockPostProcessorView extends MarkdownRenderChild {
 
 					const pairSpan = isTokenPair
 						? lineDiv.createSpan({
-								cls: "chord-sheet-chord-text-pair",
-							})
+							cls: "chord-sheet-chord-text-pair",
+						})
 						: null;
 
 					const chordSpan = (pairSpan ?? lineDiv).createSpan({

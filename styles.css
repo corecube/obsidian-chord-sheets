@@ -464,6 +464,18 @@ settings:
     display: none;
 }
 
+body.chord-sheet-lyrics-only .chord-sheet-chord-overview-container,
+body.chord-sheet-lyrics-only .chord-sheet-tools-container,
+body.chord-sheet-lyrics-only .chord-sheet-chord-popup,
+body.chord-sheet-lyrics-only .markdown-source-view.mod-cm6 .cm-line.chord-sheet-chord-line,
+body.chord-sheet-lyrics-only .markdown-preview-view .chord-sheet-line-is-chord {
+    display: none !important;
+}
+
+body.chord-sheet-lyrics-only .chord-sheet-chord {
+    display: none !important;
+}
+
 .chord-sheet-chord-name {
 	text-align: center;
 	font-family: var(--font-monospace);

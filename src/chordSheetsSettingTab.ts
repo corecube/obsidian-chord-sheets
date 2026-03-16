@@ -31,6 +31,21 @@ export class ChordSheetsSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
+		new Setting(containerEl)
+			.setName("Show chords")
+			.setDesc(
+				"Show chords normally. Turn this off to display only lyrics. This can also be toggled with a command.",
+			)
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.showChords)
+					.onChange(async (value) => {
+						this.plugin.settings.showChords = value;
+						await this.plugin.saveSettings();
+						this.plugin.applyNewSettingsToEditors();
+					}),
+			);
+
 		const chordOverviewOptions: Record<ShowChordOverviewSetting, string> = {
 			never: "Never",
 			edit: "In edit mode",

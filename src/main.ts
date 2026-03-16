@@ -1,11 +1,11 @@
 // noinspection JSUnusedGlobalSymbols
 
-import {addIcon, debounce, Editor, MarkdownFileInfo, MarkdownView, Notice, Plugin, TFile, View} from 'obsidian';
-import {EditorView, ViewPlugin} from "@codemirror/view";
-import {Instrument} from "./chordsUtils";
-import {ChordBlockPostProcessorView} from "./chordBlockPostProcessorView";
-import {ChordSheetsSettings, DEFAULT_SETTINGS} from "./chordSheetsSettings";
-import {Extension} from "@codemirror/state";
+import { addIcon, debounce, Editor, MarkdownFileInfo, MarkdownView, Notice, Plugin, TFile, View } from 'obsidian';
+import { EditorView, ViewPlugin } from "@codemirror/view";
+import { Instrument } from "./chordsUtils";
+import { ChordBlockPostProcessorView } from "./chordBlockPostProcessorView";
+import { ChordSheetsSettings, DEFAULT_SETTINGS } from "./chordSheetsSettings";
+import { Extension } from "@codemirror/state";
 import {
 	chordSheetEditorPlugin,
 	ChordSheetsViewPlugin,
@@ -13,17 +13,18 @@ import {
 	EnharmonicToggleEventDetail,
 	TransposeEventDetail
 } from "./editor-extension/chordSheetsViewPlugin";
-import {InstrumentChangeEventDetail} from "./editor-extension/chordBlockToolsWidget";
-import {AutoscrollControl, SPEED_CHANGED_EVENT} from "./autoscrollControl";
-import {ChordSheetsSettingTab} from "./chordSheetsSettingTab";
-import {IChordSheetsPlugin} from "./chordSheetsPluginInterface";
-import {chordSheetsEditorExtension} from "./editor-extension/chordSheetsEditorExtension";
+import { InstrumentChangeEventDetail } from "./editor-extension/chordBlockToolsWidget";
+import { AutoscrollControl, SPEED_CHANGED_EVENT } from "./autoscrollControl";
+import { ChordSheetsSettingTab } from "./chordSheetsSettingTab";
+import { IChordSheetsPlugin } from "./chordSheetsPluginInterface";
+import { chordSheetsEditorExtension } from "./editor-extension/chordSheetsEditorExtension";
 import ChordsDB from "@tombatossals/chords-db";
-import {addCustomChordTypes} from "./customChordTypes";
-import {enharmonicToggle, transpose} from "./chordProcessing";
+import { addCustomChordTypes } from "./customChordTypes";
+import { enharmonicToggle, transpose } from "./chordProcessing";
 
 
 const AUTOSCROLL_SPEED_PROPERTY = "autoscroll-speed";
+const LYRICS_ONLY_CLASS = "chord-sheet-lyrics-only";
 
 export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlugin {
 	settings: ChordSheetsSettings;
@@ -35,6 +36,7 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 	async onload() {
 		addCustomChordTypes();
 		await this.loadSettings();
+		this.updateChordVisibilityClass();
 		this.app.workspace.trigger("parse-style-settings");
 		addIcon("enharmonic-toggle", enharmonicToggleIcon);
 
@@ -79,7 +81,7 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 		});
 
 		this.registerDomEvent(window, "chord-sheet-transpose", async (event: CustomEvent<TransposeEventDetail>) => {
-			const {direction, blockDef} = event.detail;
+			const { direction, blockDef } = event.detail;
 			const editor = this.app.workspace.activeEditor?.editor;
 
 			if (editor) {
@@ -93,8 +95,8 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 			}
 		});
 
-        this.registerDomEvent(window, "chord-sheet-enharmonic-toggle", async (event: CustomEvent<EnharmonicToggleEventDetail>) => {
-			const {blockDef} = event.detail;
+		this.registerDomEvent(window, "chord-sheet-enharmonic-toggle", async (event: CustomEvent<EnharmonicToggleEventDetail>) => {
+			const { blockDef } = event.detail;
 			const editor = this.app.workspace.activeEditor?.editor;
 
 			if (editor) {
@@ -139,7 +141,7 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 		this.addCommand({
 			id: 'block-instrument-change-default',
 			name: `Change instrument for the current chord block to the default instrument (${(this.settings.defaultInstrument)})`,
-			editorCheckCallback: (checking: boolean, _editor: Editor, view: MarkdownView)  => {
+			editorCheckCallback: (checking: boolean, _editor: Editor, view: MarkdownView) => {
 				return this.changeInstrumentCommand(view, this.editorPlugin, checking, null);
 			}
 		});
@@ -148,7 +150,7 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 			this.addCommand({
 				id: `block-instrument-change-${instrument}`,
 				name: `Change instrument for the current chord block to ${instrument}`,
-				editorCheckCallback: (checking: boolean, _editor: Editor, view: MarkdownView)  => {
+				editorCheckCallback: (checking: boolean, _editor: Editor, view: MarkdownView) => {
 					return this.changeInstrumentCommand(view, this.editorPlugin, checking, instrument);
 				}
 			});
@@ -168,11 +170,28 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 				this.transposeCommand(editor, this.editorPlugin, checking, "down")
 		});
 
-        this.addCommand({
+		this.addCommand({
 			id: 'enharmonic-toggle',
 			name: 'Enharmonically toggle chords in current block between sharp (#) and flat (b).',
 			editorCheckCallback: (checking: boolean, editor: Editor) =>
 				this.enharmonicToggleCommand(editor, this.editorPlugin, checking)
+		});
+
+		this.addCommand({
+			id: 'toggle-chords-visibility',
+			name: 'Toggle chords / lyrics-only view',
+			checkCallback: (checking) => {
+				const view = this.app.workspace.getActiveViewOfType(MarkdownView);
+				if (!view) {
+					return false;
+				}
+
+				if (!checking) {
+					this.toggleChordVisibility();
+				}
+
+				return true;
+			}
 		});
 
 		this.addCommand({
@@ -279,7 +298,7 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 		return true;
 	}
 
-    private enharmonicToggleCommand(editor: Editor, plugin: ViewPlugin<ChordSheetsViewPlugin>, checking: boolean) {
+	private enharmonicToggleCommand(editor: Editor, plugin: ViewPlugin<ChordSheetsViewPlugin>, checking: boolean) {
 		const editorView = editor.cm as EditorView;
 		const chordPlugin = editorView.plugin(plugin);
 		if (chordPlugin) {
@@ -342,7 +361,7 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 		editor.plugin(this.editorPlugin)?.applyChanges(changes);
 	}
 
-    private enharmonicToggle(chordTokenRanges: ChordSymbolRange[], editor: EditorView) {
+	private enharmonicToggle(chordTokenRanges: ChordSymbolRange[], editor: EditorView) {
 		const changes = enharmonicToggle(chordTokenRanges);
 		if (changes.length === 0) {
 			new Notice("No chords with accidentals were found.");
@@ -362,6 +381,17 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 
 		this.updateAutoscrollButton(view);
 
+	}
+
+	private toggleChordVisibility() {
+		this.settings.showChords = !this.settings.showChords;
+		void this.saveSettings();
+		this.applyNewSettingsToEditors();
+		new Notice(this.settings.showChords ? "Showing chords." : "Showing lyrics only.");
+	}
+
+	private updateChordVisibilityClass() {
+		document.body.classList.toggle(LYRICS_ONLY_CLASS, !this.settings.showChords);
 	}
 
 	private updateAutoscrollButton(view: MarkdownView | MarkdownFileInfo) {
@@ -461,6 +491,7 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 	}
 
 	applyNewSettingsToEditors() {
+		this.updateChordVisibilityClass();
 		this.app.workspace.iterateAllLeaves(leaf => {
 			if (leaf.view.getViewType() === "markdown") {
 				const markdownView = leaf.view as MarkdownView;
@@ -481,6 +512,7 @@ export default class ChordSheetsPlugin extends Plugin implements IChordSheetsPlu
 
 	onunload() {
 		this.stopAllAutoscrolls();
+		document.body.classList.remove(LYRICS_ONLY_CLASS);
 	}
 
 	async loadSettings() {

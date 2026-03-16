@@ -13,6 +13,7 @@ export const DEFAULT_CHORD_LINE_MARKER = "%c";
 export const DEFAULT_TEXT_LINE_MARKER = "%t";
 
 export interface ChordSheetsSettings {
+	showChords: boolean;
 	showChordOverview: ShowChordOverviewSetting;
 	showChordDiagramsOnHover: ShowChordDiagramsOnHoverSetting;
 	showTransposeControl: boolean;
@@ -35,6 +36,7 @@ export interface ChordSheetsSettings {
 }
 
 export const DEFAULT_SETTINGS: ChordSheetsSettings = {
+	showChords: true,
 	showChordOverview: "always",
 	showChordDiagramsOnHover: "always",
 	showTransposeControl: true,
