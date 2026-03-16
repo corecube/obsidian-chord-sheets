@@ -8,7 +8,8 @@
 		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
 		"version": "node version-bump.mjs && git add manifest.json versions.json",
 		"test": "jest",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"install": "mkdir -p ../chord-sheets && cp main.js ../chord-sheets/ && cp manifest.json ../chord-sheets/ && cp styles.css ../chord-sheets/"
 	},
 	"keywords": [],
 	"author": "",
